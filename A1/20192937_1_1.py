@@ -16,13 +16,18 @@ Connection: close\r\n\
 """
 
 
+# geocode(): passes latitude and longitude values to request text
 def geocode(lat, lon):
     sock = socket.socket()
+    # socket connect to base URL of API with port 80(HTTP)
     sock.connect(('api.open-notify.org', 80))
+    # complete the request text by passing lat and lon
     request = request_text.format(lat, lon)
     print(request)
+    # socket sends request after encoding
     sock.sendall(request.encode('ascii'))
     raw_reply = b''  # generate text as byte type
+    # socket receives reply from API response message
     while True:
         more = sock.recv(4096)
         if not more:
@@ -32,4 +37,7 @@ def geocode(lat, lon):
 
 
 if __name__ == '__main__':
-    geocode(45, 180)
+    # Input latitude and longitude
+    lat = input('Input latitude>> ')
+    lon = input('Input longitude>> ')
+    geocode(lat, lon)

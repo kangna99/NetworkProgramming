@@ -11,67 +11,57 @@ Example:
 Suppose the client sent "Soongsil University" as data to the server. then the size of "Soongsil University"
  is 19 bytes long, so 19 is an odd number; therefore, it received a reply from the server: "Error 403 Forbidden."
 """
-import argparse, random, socket
+import argparse, socket
 
 MAX_BYTES = 65535
 
 
 def server(interface, port):
+    # create socket as Address Family = IPv4 , Socket Type = UDP
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    # bind socket
     sock.bind((interface, port))
     print('Listening at', sock.getsockname())
     while True:
+        # recvfrom() returns (bytes, address) in tuple
         data, address = sock.recvfrom(MAX_BYTES)
-        if random.random() < 0.5:
-            # print('Pretending to drop packet from {}'.format(address))
-            continue
+        # data should be decoded
         text = data.decode('ascii')
         print('The client at {} says {!r}'.format(address, text))
-        if len(data) % 2 == 1:  # odd number
-            message = 'Error 403 Forbidden.'.format(len(data))
+        # reply message to client depends on the text length
+        if len(text) % 2 == 1:  # odd number
+            message = 'Error 403 Forbidden.'.format(len(text))
         else:  # even number
-            message = 'Your data was {} bytes long'.format(len(data))
+            message = 'Your data was {} bytes long'.format(len(text))
+
+        # socket sends response after encoding
         sock.sendto(message.encode('ascii'), address)
 
 
-def client(hostname, port, text):
+def client(hostname, port):
+    # create socket as Address Family = IPv4 , Socket Type = UDP
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    # connect socket
     sock.connect((hostname, port))
-    print('Client socket name is {}'.format(sock.getsockname()))
-
-    delay = 0.1  # seconds
+    print('Client socket name is {}\n'.format(sock.getsockname()))
+    # client inputs data and encode it in 'ascii'
+    text = input('input data>> ')
     data = text.encode('ascii')
-    while True:
-        sock.send(data)
-        print('Waiting up to {} seconds for a reply'.format(delay))
-        sock.settimeout(delay)
-        try:
-            data = sock.recv(MAX_BYTES)
-        except socket.timeout as exc:
-            delay *= 2  # wait even longer for the next request
-            if delay > 2.0:
-                raise RuntimeError('I think the server is down') from exc
-        else:
-            break  # we are done, and can stop looping
-
+    # send data to the server
+    sock.send(data)
+    # socket receives response from the server
+    data = sock.recv(MAX_BYTES)
     print('{}'.format(data.decode('ascii')))
 
 
 if __name__ == '__main__':
     choices = {'client': client, 'server': server}
-    parser = argparse.ArgumentParser(description='Send and receive UDP,'
-                                                 ' pretending packets are often dropped')
+    parser = argparse.ArgumentParser(description='Send and receive UDP')
     parser.add_argument('role', choices=choices, help='which role to take')
     parser.add_argument('host', help='interface the server listens at;'
                                      ' host the client sends to')
     parser.add_argument('-p', metavar='PORT', type=int, default=1060,
                         help='UDP port (default 1060)')
-    parser.add_argument('-t', metavar='TEXT', type=str, default='',
-                        help='text(data) that client sends to server. NOTE that text should be in "DOUBLE QUOTE"')
     args = parser.parse_args()
     function = choices[args.role]
-
-    if function is client:
-        function(args.host, args.p, args.t)
-    elif function is server:
-        function(args.host, args.p)
+    function(args.host, args.p)

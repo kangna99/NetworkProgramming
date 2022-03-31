@@ -25,97 +25,108 @@ conditions and messages:
 import argparse, random, socket
 import os
 
+MAX_ATTEMPT = 5
+
 
 def server(interface, port):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Address Family = IPv4 , Socket Type = TCP connection
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # to resolve problem when port is used
+    # create socket as Address Family = IPv4 , Socket Type = TCP
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # to resolve problem when port is used
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    # bind socket
     sock.bind((interface, port))
+    # listening socket is connected
     sock.listen(1)
     print('Listening at', sock.getsockname())
-    ans = random.randint(1, 10)
-    print('ans: {}'.format(ans))
-    attempt_cnt = 0
     print('Waiting to accept a new connection')
-    sc, sockname = sock.accept()  # accept returns (socket, addr) tuple
+    # accept() returns (socket, address) in tuple
+    sc, sockname = sock.accept()
     print('We have accepted a connection from', sockname)
     print('  Socket name:', sc.getsockname())
     print('  Socket peer:', sc.getpeername())
+
+    # ans: a random number which will be initialized when the game is started
+    # attempt: a number of chance to guess (should be under MAX_ATTEMPT)
+    ans = 0
+    attempt = 0
+
     while True:
         message = sc.recv(1024).decode('ascii')
-        print(message)
+        # if client sends "start", the game begins
         if message == "start":
             print('game started')
+            attempt = 0
+            ans = random.randint(1, 10)
+            print('The answer is {}'.format(ans))
 
+        # if client sends a number, reply message depends on the value
         elif message.isdigit():
             guess = int(message)
-            print('client guess: {}'.format(guess))
+            attempt += 1
+            print('{}try) {}'.format(attempt, guess))
 
             if guess == ans:
-                reply = "Congratulations you did it."
+                reply = 'Congratulations you did it.'
+                print('game over')
+            elif attempt == MAX_ATTEMPT:
+                print('game over')
+                reply = "You lost the game!"
             elif guess > ans:
                 reply = "You Guessed too high!"
-            else:
+            elif guess < ans:
                 reply = "You guessed too small!"
+            else:
+                reply = "unknown condition"
 
             sc.sendall(reply.encode('ascii'))
-            # if reply == "Congratulations you did it.":
-            #     sc.close()
-            #     sock.close()
-            # else:
-            #     attempt_cnt += 1
-
-        elif message == "close":
-            sc.close()
-            sock.close()
-            break
-
+        # every other inputs except "start" or guess(int) makes an error message
         else:
             print('user input error')
-            sc.close()
-
-        # if attempt_cnt == 5:
-        #     sc.sendall(b'Farewell, client')
-        #     sc.close()
-        #     print('  Reply sent, socket closed')
 
 
 def client(host, port):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # create socket
-    sock.connect((host, port))  # connect socket
+    # create socket as Address Family = IPv4 , Socket Type = TCP
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # connect socket
+    sock.connect((host, port))
+
     while True:
         user_input = input("Type \"start\" to begin the game!\n>> ")
         if user_input == "start":
             sock.sendall(user_input.encode('ascii'))
             os.system('cls')
-            break
+            start = 1
+            guess_cnt = 0
         else:
             print("check your input (type \"start\")")
             continue
-    guess_cnt = 1
-    print('you have only 5 chances to guess the number! (1~10)')
 
-    while True:
-        user_input = input("guess the number>> ")
-        if user_input.isdigit():  # if the input is digit follow below
-            if 1 <= int(user_input) <= 10:
-                sock.sendall(str(user_input).encode('ascii'))
-                reply = sock.recv(1024).decode('ascii')
-                print(repr(reply))
-                if reply == "Congratulations you did it.":
-                    print("\nYou made it in {} try!!".format(guess_cnt))
-                    break
+        print('you have only 5 chances to guess the number! (1~10)')
+        while start:
+            user_input = input("guess the number>> ")
+            # if the input is digit, follow below
+            if user_input.isdigit():
+                if 1 <= int(user_input) <= 10:
+                    guess_cnt += 1
+                    sock.sendall(str(user_input).encode('ascii'))
+                    reply = sock.recv(1024).decode('ascii')
+                    print(repr(reply))
 
-                guess_cnt += 1
+                    # if client wins or loses the game, which means the game ended, break the loop
+                    if reply == "Congratulations you did it.":
+                        print("\nYou made it in {} try!!\n".format(guess_cnt))
+                        break
+                    if reply == "You lost the game!":
+                        break
+
+                # if the input is out of range 1~10
+                else:
+                    print('check the number range (1~10)')
+                    continue
+
+            # if the input is not digit, continue and ask client to 'guess the number' again
             else:
-                print('check the number range (1~10)')
                 continue
-
-            if guess_cnt > 5:
-                break
-        else:  # else if the input is not digit continue and ask client to 'guess the number' again
-            continue
-    sock.sendall(b'close')
-    sock.close()
 
 
 if __name__ == '__main__':
