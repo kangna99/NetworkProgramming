@@ -11,10 +11,10 @@ class Solution():
         # Write your code between start and end for solution of problem 1
         # Start
         for i in range(L, R + 1):
-            if k == bin(i).count('1'):
+            if k == bin(i).count('1'):  # if '1' count in binary matches, break the loop
                 num = i
                 break
-            else:
+            else:  # else return value should be '-1'
                 num = -1
         # End
         return num
@@ -23,11 +23,32 @@ class Solution():
         s = ""
         # Write your code between start and end for solution of problem 2
         # Start
-        for i in range(len(S)):
-            if 'a' <= S[i] <= 'z':  # lower case -> upper case
-                s += chr(ord(S[i]) - 32)
-            elif 'A' <= S[i] <= 'Z':  # upper case -> lower case
-                s += chr(ord(S[i]) + 32)
+        # dictionary to match lowercase to uppercase
+        lower2Upper = {"a": "A", "b": "B", "c": "C", "d": "D", "e": "E", "f": "F", "g": "G",
+                       "h": "H", "i": "I", "j": "J", "k": "K", "l": "L", "m": "M", "n": "N",
+                       "o": "O", "p": "P", "q": "Q", "r": "R", "s": "S", "t": "T", "u": "U",
+                       "v": "V", "w": "W", "x": "X", "y": "Y", "z": "Z"}
+        # dictionary to match uppercase to lowercase
+        upper2Lower = {"A": "a", "B": "b", "C": "c", "D": "d", "E": "e", "F": "f", "G": "g",
+                       "h": "H", "I": "i", "j": "J", "K": "k", "l": "L", "m": "M", "N": "n",
+                       "o": "O", "p": "P", "q": "Q", "r": "R", "s": "S", "T": "t", "u": "U",
+                       "v": "V", "w": "W", "x": "X", "y": "Y", "z": "Z"}
+        for c in S:
+            if 'a' <= c <= 'z':  # lower case -> upper case
+                s += lower2Upper[c]
+            elif 'A' <= c <= 'Z':  # upper case -> lower case
+                s += upper2Lower[c]
+            else:
+                s += c
+
+        ## not allowed because of predefined functions e.g. ord(), chr() ##
+        # for c in S:
+        #     if 'a' <= c <= 'z':  # lower case -> upper case
+        #         s += chr(ord(c) - 32)
+        #     elif 'A' <= c <= 'Z':  # upper case -> lower case
+        #         s += chr(ord(c) + 32)
+        #     else:
+        #         s += c
         # End
         return s
 
@@ -92,5 +113,26 @@ class Solution():
         cipher = ""  # Variable to store cipher used for connection
         msg = ""  # Variable to store message received from server
 
+        # client to authenticate server with crt file
+        purpose = ssl.Purpose.SERVER_AUTH
+        context = ssl.create_default_context(purpose, cafile=cafile)
+        context.check_hostname = False
+
+        # TCP connection
+        raw_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        raw_sock.connect((host, port))
+        # Wrap a raw socket using ssl
+        ssl_sock = context.wrap_socket(raw_sock, server_hostname=host)
+
+        # read certificate
+        cert = ssl_sock.getpeercert()
+        # read cipher
+        cipher = ssl_sock.cipher()
+        # read the data received from the server
+        while True:
+            data = ssl_sock.recv(1024)
+            if not data:
+                break
+            msg += data.decode("utf-8")  # decode byte to string
         # End
         return cert, cipher, msg
