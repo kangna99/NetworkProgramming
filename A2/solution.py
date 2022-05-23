@@ -30,9 +30,9 @@ class Solution():
                        "v": "V", "w": "W", "x": "X", "y": "Y", "z": "Z"}
         # dictionary to match uppercase to lowercase
         upper2Lower = {"A": "a", "B": "b", "C": "c", "D": "d", "E": "e", "F": "f", "G": "g",
-                       "h": "H", "I": "i", "j": "J", "K": "k", "l": "L", "m": "M", "N": "n",
-                       "o": "O", "p": "P", "q": "Q", "r": "R", "s": "S", "T": "t", "u": "U",
-                       "v": "V", "w": "W", "x": "X", "y": "Y", "z": "Z"}
+                       "H": "h", "I": "i", "J": "j", "K": "k", "L": "l", "M": "m", "N": "n",
+                       "O": "o", "P": "p", "Q": "q", "R": "r", "S": "s", "T": "t", "U": "u",
+                       "V": "v", "W": "w", "X": "x", "Y": "y", "Z": "z"}
         for c in S:
             if 'a' <= c <= 'z':  # lower case -> upper case
                 s += lower2Upper[c]
