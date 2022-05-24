@@ -17,7 +17,7 @@ def server(reader, writer):
         message = yield from reader.read(4096)
         message = str(message).split('\'')[1]
 
-        # if client sends "start" or "end", the game begins
+        # "start" to game begin, "end" to finish the game
         if message == "start":
             print('game started')
             attempt = 0
@@ -49,6 +49,7 @@ def server(reader, writer):
 
             writer.write(reply.encode('ascii'))
 
+        # client sends "close" and closes their socket
         elif message == "close":
             print('Client {} closed socket normally'.format(address))
             return
